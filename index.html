@@ -243,9 +243,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
                assign:Array.isArray(v.assign) ? v.assign : [] };
     }).sort(function(a,b){ return a.date < b.date ? 1 : -1; });
     cur = days[0] || null;
-    if(!picked){
+    if(!me){
       var saved = recalled();
-      if(saved && names().indexOf(saved) !== -1) picked = saved;
+      if(saved && names().indexOf(saved) !== -1) me = saved;
     }
     renderDays(); renderAll();
     if(!days.length) footEl.textContent = '아직 올라온 배정이 없습니다.';
