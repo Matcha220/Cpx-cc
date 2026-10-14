@@ -107,6 +107,135 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
   </footer>
 </div>
 
+<script id="cpxdata" type="application/json">
+{
+ "days": [
+  {
+   "date": "2026-10-14",
+   "label": "10/14 (수)",
+   "sets": 8,
+   "assign": [
+    {
+     "name": "양수연",
+     "cc": "경련",
+     "room": "R3",
+     "sets": "1~4"
+    },
+    {
+     "name": "김민재",
+     "cc": "물질오남용",
+     "room": "R1",
+     "sets": "1~4"
+    },
+    {
+     "name": "김세민",
+     "cc": "물질오남용",
+     "room": "R4",
+     "sets": "5~8"
+    },
+    {
+     "name": "김영식",
+     "cc": "경련",
+     "room": "R2",
+     "sets": "5~8"
+    },
+    {
+     "name": "안성주",
+     "cc": "관절통증",
+     "room": "R2",
+     "sets": "1~4"
+    },
+    {
+     "name": "박진영",
+     "cc": "질출혈",
+     "room": "R3",
+     "sets": "5~8"
+    },
+    {
+     "name": "배강렬",
+     "cc": "관절통증",
+     "room": "R1",
+     "sets": "5~8"
+    },
+    {
+     "name": "김예서",
+     "cc": "질출혈",
+     "room": "R4",
+     "sets": "1~4"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-15",
+   "label": "10/15 (목)",
+   "sets": 10,
+   "note": "",
+   "assign": [
+    {
+     "name": "배강렬",
+     "cc": "어지럼",
+     "room": "R3",
+     "sets": "6~10"
+    },
+    {
+     "name": "김영식",
+     "cc": "허리통증",
+     "room": "R2",
+     "sets": "1~5"
+    },
+    {
+     "name": "진경섭",
+     "cc": "월경통",
+     "room": "R4",
+     "sets": "6~10"
+    },
+    {
+     "name": "안성주",
+     "cc": "월경통",
+     "room": "R3",
+     "sets": "1~5"
+    },
+    {
+     "name": "양수연",
+     "cc": "어지럼",
+     "room": "R4",
+     "sets": "1~5"
+    },
+    {
+     "name": "김세민",
+     "cc": "허리통증",
+     "room": "R5",
+     "sets": "6~10"
+    },
+    {
+     "name": "김기광",
+     "cc": "질분비물",
+     "room": "R5",
+     "sets": "1~5"
+    },
+    {
+     "name": "정예레나",
+     "cc": "근력·감각이상",
+     "room": "R1",
+     "sets": "1~5"
+    },
+    {
+     "name": "김민재",
+     "cc": "질분비물",
+     "room": "R1",
+     "sets": "6~10"
+    },
+    {
+     "name": "김예서",
+     "cc": "근력·감각이상",
+     "room": "R2",
+     "sets": "6~10"
+    }
+   ]
+  }
+ ]
+}
+</script>
 <script>
 (function(){
   var days = [], cur = null, me = null;
@@ -233,11 +362,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
   me = load();
   footEl.textContent = '배정을 불러오는 중…';
 
-  var base = new URL('.', location.href).href;
-  fetch(base + 'data.json?v=' + Date.now()).then(function(r){
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  }).then(function(all){
+  try{
+    var all = JSON.parse(document.getElementById('cpxdata').textContent);
     days = (all.days || []).map(function(v){
       return { id:v.date, label:v.label, date:v.date, sets:v.sets, note:v.note,
                assign:Array.isArray(v.assign) ? v.assign : [] };
@@ -249,9 +375,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
     }
     renderDays(); renderAll();
     if(!days.length) footEl.textContent = '아직 올라온 배정이 없습니다.';
-  }).catch(function(e){
-    footEl.textContent = '배정을 불러오지 못했습니다 (' + (e && e.message ? e.message : '원인 불명') + '). 잠시 뒤 새로고침해 주세요.';
-  });
+  }catch(e){
+    footEl.textContent = '배정 데이터를 읽지 못했습니다 (' + (e && e.message ? e.message : '원인 불명') + ').';
+  }
 })();
 </script>
 
