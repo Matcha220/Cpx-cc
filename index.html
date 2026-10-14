@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>CPX 환자 배정</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 한 열 세로 스택. 이름을 한 번 고르면 선택 UI가 사라지고 본인 카드만 남는다. */
+:root{
+  --bg:#F6F8F6; --surface:#FFFFFF; --ink:#17201B; --muted:#5D6B63;
+  --line:#DDE4DF; --accent:#2A6B4F; --accent-soft:#E4F0E9;
+  --display:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#19201B; --ink:#E7EDE8; --muted:#9BAAA1;
+  --line:#2A332D; --accent:#79C49C; --accent-soft:#1E2B24;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#19201B; --ink:#E7EDE8; --muted:#9BAAA1;
+  --line:#2A332D; --accent:#79C49C; --accent-soft:#1E2B24;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:30px 64px}
+.wrap{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+header{display:flex;flex-direction:column;gap:5px}
+h1{font-size:1.5rem;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:.86rem;margin:0}
+
+.daybar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.daybar label{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+select{font-family:var(--display);font-size:.95rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0;max-width:100%}
+
+input[type=search]{width:100%;font-family:var(--display);font-size:1.05rem;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px}
+input[type=search]::placeholder{color:var(--muted)}
+input[type=search]:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.pickhead{font-size:.95rem;font-weight:600;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-family:var(--display);font-size:.92rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;min-height:150px;
+  display:flex;flex-direction:column;justify-content:center}
+.who{font-size:.76rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.name{font-size:1.05rem;font-weight:600;margin:0 0 16px}
+.cc{font-size:2.05rem;font-weight:700;letter-spacing:-.025em;margin:0;color:var(--accent);text-wrap:balance;line-height:1.2}
+.detail{margin:12px 0 0;font-size:.95rem}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.tag{font-family:var(--mono);font-size:.79rem;background:var(--accent-soft);color:var(--ink);
+  border-radius:6px;padding:4px 9px;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:.95rem;margin:0}
+
+.notice{font-size:.82rem;color:var(--muted);margin:0;padding-left:11px;border-left:2px solid var(--line)}
+.linkbtn{background:none;border:none;padding:0;font-family:var(--display);font-size:.8rem;
+  color:var(--muted);text-decoration:underline;cursor:pointer}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:.84rem;color:var(--muted)}
+.confirm button{font-family:var(--display);font-size:.84rem;border-radius:7px;padding:5px 12px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.confirm button.yes{border-color:var(--accent);color:var(--accent);font-weight:600}
+footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-direction:column;gap:9px;align-items:center}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>CPX 환자 배정</h1>
+    <p class="sub" id="subline">이름을 한 번 고르면 다음부터 본인 것만 보입니다.</p>
+  </header>
+
+  <div class="daybar" id="daybar" hidden>
+    <label for="daysel">연습 날짜</label>
+    <select id="daysel"></select>
+  </div>
+
+  <div id="picker" hidden>
+    <p class="pickhead">본인 이름을 고르세요</p>
+    <input type="search" id="q" placeholder="이름 검색 (예: 민재)" autocomplete="off" enterkeyhint="search" style="margin:10px 0">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <section class="card" id="result">
+    <p class="empty" id="emptymsg">불러오는 중…</p>
+  </section>
+
+  <p class="notice" id="notice" hidden>본인 주호소만 보입니다. 다른 사람 배정과 다음 연습 주호소는 뜨지 않습니다.</p>
+
+  <footer>
+    <span id="foot"></span>
+    <button type="button" class="linkbtn" id="changebtn" hidden>이름 바꾸기</button>
+    <span class="confirm" id="confirmrow" hidden>
+      이름을 바꾸면 명단이 다시 보입니다.
+      <button type="button" class="yes" id="yesbtn">바꾸기</button>
+      <button type="button" id="nobtn">취소</button>
+    </span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var days = [], cur = null, me = null;
+  var KEY = 'cpx.name';
+  var selEl = document.getElementById('daysel');
+  var dayBar = document.getElementById('daybar');
+  var picker = document.getElementById('picker');
+  var qEl = document.getElementById('q');
+  var chipsEl = document.getElementById('chips');
+  var resEl = document.getElementById('result');
+  var noticeEl = document.getElementById('notice');
+  var footEl = document.getElementById('foot');
+  var subEl = document.getElementById('subline');
+  var changeBtn = document.getElementById('changebtn');
+  var confirmRow = document.getElementById('confirmrow');
+
+  function save(n){ try{ localStorage.setItem(KEY, n); }catch(e){} }
+  function load(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
+  function clear(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+
+  function todayKey(){
+    return new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10); // KST
+  }
+  function rows(){ return (cur && Array.isArray(cur.assign)) ? cur.assign : []; }
+  function names(){ return rows().map(function(r){ return r.name; }).filter(Boolean); }
+  function allNames(){
+    var seen = {}, out = [];
+    days.forEach(function(d){
+      (d.assign || []).forEach(function(r){
+        if(r.name && !seen[r.name]){ seen[r.name] = 1; out.push(r.name); }
+      });
+    });
+    return out;
+  }
+
+  function renderDays(){
+    selEl.innerHTML = '';
+    dayBar.hidden = days.length < 2 || !me;
+    days.forEach(function(d){
+      var o = document.createElement('option');
+      o.value = d.id; o.textContent = d.label || d.id;
+      selEl.appendChild(o);
+    });
+    if(cur) selEl.value = cur.id;
+  }
+
+  function renderPicker(){
+    var show = !me && days.length > 0;
+    picker.hidden = !show;
+    if(!show) return;
+    chipsEl.innerHTML = '';
+    var q = qEl.value.trim().replace(/\s/g,'');
+    allNames().filter(function(n){
+      return !q || n.replace(/\s/g,'').indexOf(q) !== -1;
+    }).forEach(function(n){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = n;
+      b.addEventListener('click', function(){
+        me = n; save(n); qEl.value = ''; renderAll();
+      });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  function renderResult(){
+    resEl.innerHTML = '';
+    if(!me){
+      var p0 = document.createElement('p'); p0.className = 'empty';
+      p0.textContent = days.length ? '위에서 본인 이름을 고르세요.' : '아직 올라온 배정이 없습니다.';
+      resEl.appendChild(p0); return;
+    }
+    var r = rows().filter(function(x){ return x.name === me; })[0];
+    if(!r){
+      var p = document.createElement('p'); p.className = 'empty';
+      p.textContent = cur ? (cur.label || cur.id) + ' 명단에 ' + me + ' 님은 없습니다.'
+                          : '아직 올라온 배정이 없습니다.';
+      resEl.appendChild(p); return;
+    }
+    var who = document.createElement('p'); who.className = 'who';
+    who.textContent = (cur.label || cur.id) + ' · 환자 배정';
+    var nm = document.createElement('p'); nm.className = 'name'; nm.textContent = r.name;
+    var cc = document.createElement('p'); cc.className = 'cc'; cc.textContent = r.cc || '배정 없음';
+    resEl.appendChild(who); resEl.appendChild(nm); resEl.appendChild(cc);
+    if(r.detail){
+      var dt = document.createElement('p'); dt.className = 'detail'; dt.textContent = r.detail;
+      resEl.appendChild(dt);
+    }
+    var tags = [];
+    if(r.room) tags.push(r.room);
+    if(r.sets) tags.push(r.sets + '세트');
+    if(cur.sets) tags.push('총 ' + cur.sets + '세트');
+    if(tags.length){
+      var m = document.createElement('div'); m.className = 'meta';
+      tags.forEach(function(t){
+        var s = document.createElement('span'); s.className = 'tag'; s.textContent = t; m.appendChild(s);
+      });
+      resEl.appendChild(m);
+    }
+  }
+
+  function renderAll(){
+    renderDays(); renderPicker(); renderResult();
+    noticeEl.hidden = !me;
+    changeBtn.hidden = !me || !confirmRow.hidden;
+    subEl.textContent = me ? me + ' 님 화면입니다.' : '이름을 한 번 고르면 다음부터 본인 것만 보입니다.';
+    footEl.textContent = (cur && cur.note) ? cur.note : '';
+  }
+
+  selEl.addEventListener('change', function(){
+    cur = days.filter(function(d){ return d.id === selEl.value; })[0] || null;
+    renderAll();
+  });
+  qEl.addEventListener('input', renderPicker);
+  changeBtn.addEventListener('click', function(){
+    confirmRow.hidden = false; changeBtn.hidden = true;
+  });
+  document.getElementById('nobtn').addEventListener('click', function(){
+    confirmRow.hidden = true; renderAll();
+  });
+  document.getElementById('yesbtn').addEventListener('click', function(){
+    me = null; clear(); confirmRow.hidden = true; renderAll();
+  });
+
+  me = load();
+  footEl.textContent = '배정을 불러오는 중…';
+
+  fetch('data.json?v=' + Date.now()).then(function(r){ return r.json(); }).then(function(all){
+    var t = todayKey();
+    days = (all.days || []).map(function(v){
+      return { id:v.date, label:v.label, date:v.date, sets:v.sets, note:v.note,
+               assign:Array.isArray(v.assign) ? v.assign : [] };
+    }).filter(function(d){ return String(d.date) <= t; })
+      .sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+    cur = days[0] || null;
+    if(!picked){
+      var saved = recalled();
+      if(saved && names().indexOf(saved) !== -1) picked = saved;
+    }
+    renderDays(); renderAll();
+    if(!days.length) footEl.textContent = '아직 올라온 배정이 없습니다.';
+  }).catch(function(){
+    footEl.textContent = '배정을 불러오지 못했습니다. 새로고침해 주세요.';
+  });
+})();
+</script>
+
+</body>
+</html>
