@@ -256,9 +256,6 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
   function load(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
   function clear(){ try{ localStorage.removeItem(KEY); }catch(e){} }
 
-  function todayKey(){
-    return new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10); // KST
-  }
   function rows(){ return (cur && Array.isArray(cur.assign)) ? cur.assign : []; }
   function names(){ return rows().map(function(r){ return r.name; }).filter(Boolean); }
   function allNames(){
@@ -370,7 +367,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
     }).sort(function(a,b){ return a.date < b.date ? 1 : -1; });
     cur = days[0] || null;
     if(!me){
-      var saved = recalled();
+      var saved = load();
       if(saved && names().indexOf(saved) !== -1) me = saved;
     }
     renderDays(); renderAll();
