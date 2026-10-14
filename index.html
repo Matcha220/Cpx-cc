@@ -94,7 +94,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
     <p class="empty" id="emptymsg">불러오는 중…</p>
   </section>
 
-  <p class="notice" id="notice" hidden>본인 주호소만 보입니다. 다른 사람 배정과 다음 연습 주호소는 뜨지 않습니다.</p>
+  <p class="notice" id="notice" hidden>본인 주호소만 보입니다. 다른 사람 배정은 보이지 않습니다.</p>
 
   <footer>
     <span id="foot"></span>
@@ -234,12 +234,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;display:flex;flex-di
   footEl.textContent = '배정을 불러오는 중…';
 
   fetch('data.json?v=' + Date.now()).then(function(r){ return r.json(); }).then(function(all){
-    var t = todayKey();
     days = (all.days || []).map(function(v){
       return { id:v.date, label:v.label, date:v.date, sets:v.sets, note:v.note,
                assign:Array.isArray(v.assign) ? v.assign : [] };
-    }).filter(function(d){ return String(d.date) <= t; })
-      .sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+    }).sort(function(a,b){ return a.date < b.date ? 1 : -1; });
     cur = days[0] || null;
     if(!picked){
       var saved = recalled();
